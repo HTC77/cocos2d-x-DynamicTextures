@@ -40,6 +40,13 @@ public:
     
     // implement the "static create()" method manually
     CREATE_FUNC(HelloWorld);
+	
+	Size visibleSize;
+	Sprite* _background;
+	Color4F randomBrightColor();
+	void genBackground();
+	Sprite* spriteWithColor(float textureWidth, float textureHeight, Color4F bgColor);
+	bool onTouchBegan(Touch* touch, Event* event);
 };
 
 #endif // __HELLOWORLD_SCENE_H__

@@ -47,7 +47,7 @@ bool HelloWorld::init()
         return false;
     }
 
-    auto visibleSize = Director::getInstance()->getVisibleSize();
+    visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
     /////////////////////////////
@@ -80,8 +80,17 @@ bool HelloWorld::init()
 
     /////////////////////////////
     // 3. add your codes below...
+	
+	// generate background
+	_background = new Sprite();
+	this->genBackground();
 
-
+	// touch listener
+	auto touchListener =
+		EventListenerTouchOneByOne::create();
+	touchListener->onTouchBegan = CC_CALLBACK_2(HelloWorld::onTouchBegan, this);
+	getEventDispatcher()->addEventListenerWithFixedPriority(
+		touchListener, 1);
 
     return true;
 }
@@ -98,4 +107,50 @@ void HelloWorld::menuCloseCallback(Ref* pSender)
     //_eventDispatcher->dispatchEvent(&customEndEvent);
 
 
+}
+
+Color4F HelloWorld::randomBrightColor()
+{
+	int requiredBrightness = 192;
+	Color4B color;
+	while (true)
+	{
+		color = Color4B(rand() % 255, rand() % 255, rand() % 255, 255);
+		if (color.r > requiredBrightness
+			|| color.g > requiredBrightness
+			|| color.b > requiredBrightness)
+			break;
+	}
+	return Color4F(color);
+}
+
+void HelloWorld::genBackground()
+{
+	_background->removeFromParentAndCleanup(true);
+	Color4F bgColor = randomBrightColor();
+	_background = spriteWithColor(512, 512, bgColor);
+	_background->setPosition(visibleSize / 2);
+	this->addChild(_background, -1);
+}
+
+Sprite* HelloWorld::spriteWithColor(float textureWidth, float textureHeight, Color4F bgColor)
+{
+	// 1: Create CCRenderTexture
+	RenderTexture *rt = RenderTexture::create(textureWidth, textureHeight); // init method changed
+	rt->setKeepMatrix(true);
+
+	// 2: Call CCRenderTexture:begin
+	rt->beginWithClear(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+
+	// 3: Call CCRenderTexture:end
+	rt->end();
+
+	// 4: create new sprite from the texture
+	return Sprite::createWithTexture(rt->getSprite()->getTexture());
+}
+
+bool HelloWorld::onTouchBegan(Touch* touch, Event* event)
+{
+	this->genBackground();
+	return true;
 }
