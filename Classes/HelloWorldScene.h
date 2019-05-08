@@ -51,6 +51,9 @@ public:
 	CustomCommand _customCommand;
 	// draws gradient
 	void onDraw(float textureWidth, float textureHeight);
+
+	Texture2D::TexParams _texParams;
+	void update(float delta) override;
 };
 
 #endif // __HELLOWORLD_SCENE_H__

@@ -88,6 +88,7 @@ bool HelloWorld::init()
 
 	// generate background
 	_background = new Sprite();
+	_texParams = { GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT };
 	this->genBackground();
 
 	// touch listener
@@ -96,6 +97,8 @@ bool HelloWorld::init()
 	touchListener->onTouchBegan = CC_CALLBACK_2(HelloWorld::onTouchBegan, this);
 	getEventDispatcher()->addEventListenerWithFixedPriority(
 		touchListener, 1);
+
+	this->scheduleUpdate();
 
     return true;
 }
@@ -135,13 +138,14 @@ void HelloWorld::genBackground()
 	Color4F bgColor = randomBrightColor();
 	_background = spriteWithColor(512, 512, bgColor);
 	_background->setPosition(visibleSize / 2);
+	_background->getTexture()->setTexParameters(_texParams);
 	this->addChild(_background, -1);
 }
 
 Sprite* HelloWorld::spriteWithColor(float textureWidth, float textureHeight, Color4F bgColor)
 {
 	// 1: Create CCRenderTexture
-	RenderTexture *rt = RenderTexture::create(textureWidth, textureHeight); // init method changed
+	RenderTexture *rt = RenderTexture::create(textureWidth, textureHeight);
 	rt->setKeepMatrix(true);
 
 	// 2: Call CCRenderTexture:begin
@@ -200,4 +204,13 @@ void HelloWorld::onDraw(float textureWidth, float textureHeight)
 		GL_FLOAT, GL_FALSE, 0, colors);
 	glBlendFunc(CC_BLEND_SRC, CC_BLEND_DST);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(nVertices));
+}
+
+void HelloWorld::update(float delta)
+{
+	static int PIXELS_PER_SECOND = 100;
+	static float offsetX = 0;
+	offsetX += PIXELS_PER_SECOND * delta;
+	Size textureSize = _background->getTextureRect().size;
+	_background->setTextureRect(Rect(offsetX, 0, textureSize.width, textureSize.height));
 }
