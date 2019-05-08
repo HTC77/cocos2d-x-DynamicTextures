@@ -47,6 +47,10 @@ public:
 	void genBackground();
 	Sprite* spriteWithColor(float textureWidth, float textureHeight, Color4F bgColor);
 	bool onTouchBegan(Touch* touch, Event* event);
+
+	CustomCommand _customCommand;
+	// draws gradient
+	void onDraw(float textureWidth, float textureHeight);
 };
 
 #endif // __HELLOWORLD_SCENE_H__

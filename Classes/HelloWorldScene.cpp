@@ -80,7 +80,12 @@ bool HelloWorld::init()
 
     /////////////////////////////
     // 3. add your codes below...
-	
+
+	// init Shader program
+	this->setGLProgram(
+		GLProgramCache::getInstance()->getGLProgram(
+			GLProgram::SHADER_NAME_POSITION_COLOR));
+
 	// generate background
 	_background = new Sprite();
 	this->genBackground();
@@ -142,10 +147,25 @@ Sprite* HelloWorld::spriteWithColor(float textureWidth, float textureHeight, Col
 	// 2: Call CCRenderTexture:begin
 	rt->beginWithClear(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
 
-	// 3: Call CCRenderTexture:end
+	// 3: Draw on texture
+
+	//draw gradient
+	_customCommand.init(rt->getGlobalZOrder());
+	_customCommand.func = CC_CALLBACK_0(HelloWorld::onDraw,
+		this, textureWidth, textureHeight);
+	auto renderer = Director::getInstance()->getRenderer();
+	renderer->addCommand(&_customCommand);
+
+	//add noise
+	Sprite* noise = Sprite::create("Noise.png");
+	noise->setBlendFunc({ GL_DST_COLOR, GL_ZERO });
+	noise->setPosition(Vec2(textureWidth / 2.0f, textureHeight / 2.0f));
+	noise->visit();
+
+	// 4: Call CCRenderTexture:end
 	rt->end();
 
-	// 4: create new sprite from the texture
+	// 5: create new sprite from the texture
 	return Sprite::createWithTexture(rt->getSprite()->getTexture());
 }
 
@@ -153,4 +173,31 @@ bool HelloWorld::onTouchBegan(Touch* touch, Event* event)
 {
 	this->genBackground();
 	return true;
+}
+
+void HelloWorld::onDraw(float textureWidth, float textureHeight)
+{
+	CC_NODE_DRAW_SETUP();
+
+	float gradientAlpha = 0.7f;
+	int nVertices = 0;
+	Color4F colors[4];
+	Point vertices[4];
+
+	vertices[nVertices] = Vec2(0, 0);
+	colors[nVertices++] = Color4F(0, 0, 0, 0);
+	vertices[nVertices] = Vec2(textureWidth, 0);
+	colors[nVertices++] = Color4F(0, 0, 0, 0);
+	vertices[nVertices] = Vec2(0, textureHeight);
+	colors[nVertices++] = Color4F(0, 0, 0, gradientAlpha);
+	vertices[nVertices] = Vec2(textureWidth, textureHeight);
+	colors[nVertices++] = Color4F(0, 0, 0, gradientAlpha);
+
+	GL::enableVertexAttribs(GL::VERTEX_ATTRIB_FLAG_COLOR | GL::VERTEX_ATTRIB_FLAG_POSITION);
+	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 2,
+		GL_FLOAT, GL_FALSE, 0, vertices);
+	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4,
+		GL_FLOAT, GL_FALSE, 0, colors);
+	glBlendFunc(CC_BLEND_SRC, CC_BLEND_DST);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, static_cast<GLsizei>(nVertices));
 }
