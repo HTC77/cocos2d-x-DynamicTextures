@@ -86,7 +86,7 @@ bool HelloWorld::init()
 		GLProgramCache::getInstance()->getGLProgram(
 			GLProgram::SHADER_NAME_POSITION_COLOR));
 
-	// generate background
+	// generate background + stripes
 	_background = new Sprite();
 	_texParams = { GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT };
 	this->genBackground();
@@ -136,9 +136,13 @@ void HelloWorld::genBackground()
 {
 	_background->removeFromParentAndCleanup(true);
 	Color4F bgColor = randomBrightColor();
-	_background = spriteWithColor(512, 512, bgColor);
+	Color4F color2 = randomBrightColor();
+	int stripes = (rand() % 4 + 1) * 2;
+	//_background = spriteWithColor(512, 512, bgColor);
+	_background = stripedSpriteWithColor(512, 512, bgColor, color2, stripes);
 	_background->setPosition(visibleSize / 2);
 	_background->getTexture()->setTexParameters(_texParams);
+	_background->getTexture()->setAntiAliasTexParameters();
 	this->addChild(_background, -1);
 }
 
@@ -213,4 +217,76 @@ void HelloWorld::update(float delta)
 	offsetX += PIXELS_PER_SECOND * delta;
 	Size textureSize = _background->getTextureRect().size;
 	_background->setTextureRect(Rect(offsetX, 0, textureSize.width, textureSize.height));
+}
+
+Sprite* HelloWorld::stripedSpriteWithColor(float textureWidth, float textureHeight, Color4F bgColor, Color4F color2,
+	int nStripes)
+{
+	RenderTexture *rt = RenderTexture::create(textureWidth, textureHeight);
+	rt->setKeepMatrix(true);
+	rt->beginWithClear(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+
+	// noise
+	Sprite* noise = Sprite::create("Noise.png");
+	noise->setBlendFunc({ GL_DST_COLOR, GL_ZERO });
+	noise->setPosition(Vec2(textureWidth / 2.0f, textureHeight / 2.0f));
+	noise->visit();
+
+	// Draw on texture
+	_stripesCommand.init(rt->getGlobalZOrder());
+	_stripesCommand.func = CC_CALLBACK_0(HelloWorld::onDrawStripes,
+		this, textureWidth, textureHeight, nStripes, color2);
+	auto renderer = Director::getInstance()->getRenderer();
+	renderer->addCommand(&_stripesCommand);
+
+	rt->end();
+	return Sprite::createWithTexture(rt->getSprite()->getTexture());
+}
+
+void HelloWorld::onDrawStripes(float textureWidth, float textureHeight, int nStripes, Color4F color2)
+{
+	Color4F colors[48];
+	Point vertices[48];
+	int nVertices = 0;
+
+	// stripes
+	float x1 = -textureHeight;
+	float x2 = x1 + textureHeight;
+	float y1 = textureHeight;
+	float y2 = 0;
+	float dx = textureWidth / nStripes * 2;
+	float stripeWidth = dx / 2;
+	for (int i = 0; i < nStripes; ++i)
+	{
+		x2 = x1 + textureHeight;
+
+		vertices[nVertices] = Point(x1, y1);
+		colors[nVertices++] = Color4F(color2.r, color2.g, color2.b, color2.a);
+
+		vertices[nVertices] = Point(x1 + stripeWidth, y1);
+		colors[nVertices++] = Color4F(0, 0, 0, 1);
+
+		vertices[nVertices] = Point(x2, y2);
+		colors[nVertices++] = Color4F(color2.r, color2.g, color2.b, color2.a);
+
+		vertices[nVertices] = vertices[nVertices - 2];
+		colors[nVertices++] = Color4F(color2.r, color2.g, color2.b, color2.a);
+
+		vertices[nVertices] = vertices[nVertices - 2];
+		colors[nVertices++] = Color4F(color2.r, color2.g, color2.b, color2.a);
+
+		vertices[nVertices] = Point(x2 + stripeWidth, y2);
+		colors[nVertices++] = Color4F(color2.r, color2.g, color2.b, color2.a);
+
+		x1 += dx;
+	}
+
+	CC_NODE_DRAW_SETUP();
+
+	GL::enableVertexAttribs(GL::VERTEX_ATTRIB_FLAG_POSITION | GL::VERTEX_ATTRIB_FLAG_COLOR);
+	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 2,
+		GL_FLOAT, GL_FALSE, 0, vertices);
+	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4,
+		GL_FLOAT, GL_TRUE, 0, colors);
+	glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(nVertices));
 }

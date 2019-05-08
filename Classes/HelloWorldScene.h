@@ -54,6 +54,13 @@ public:
 
 	Texture2D::TexParams _texParams;
 	void update(float delta) override;
+
+	Sprite* stripedSpriteWithColor(float textureWidth, float textureHeight,
+		Color4F bgColor, Color4F color2, int nStripes);
+	CustomCommand _stripesCommand;
+	// draws stripes
+	void onDrawStripes(float textureWidth, float textureHeight,
+		int nStripes, Color4F color2);
 };
 
 #endif // __HELLOWORLD_SCENE_H__
